@@ -1,7 +1,11 @@
 #################
 ## TiddlyWiki
 #################
-backups
+midi
+audio
+backup
+images/mini
+images/silk
 
 #################
 ## Eclipse
