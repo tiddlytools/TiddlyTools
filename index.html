@@ -674,12 +674,12 @@ config.macros.option.handler=function(place,macroName,params,wikifier,paramStrin
 }
 //}}}</pre>
 </div>
-<div title="AliasPlugin" modifier="ELSDesignStudios" created="200509280700" modified="200909091131" tags="systemConfig" changecount="1">
+<div title="AliasPlugin" modifier="EricShulman" created="200509280700" modified="201208102053" tags="systemConfig" changecount="6">
 <pre>/***
 |Name|AliasPlugin|
 |Source|http://www.TiddlyTools.com/#AliasPlugin|
 |Documentation|http://www.TiddlyTools.com/#AliasPluginInfo|
-|Version|1.1.1|
+|Version|1.1.2|
 |Author|Eric Shulman|
 |License|http://www.TiddlyTools.com/#LegalStatements|
 |~CoreVersion|2.1|
@@ -690,6 +690,7 @@ Define macros for abbreviations and other &quot;aliases&quot;, and then embed th
 &gt; see [[AliasPluginInfo]]
 !!!!!Revisions
 &lt;&lt;&lt;
+2012.08.10 1.2.0 handle backslash quoting to allow direct use of macro calls in aliases
 2009.09.09 1.1.1 'tiddler' arg passed to wikify() so aliases containing macros render with correct context
 | Please see [[AliasPluginInfo]] for previous revision details |
 2005.08.12 1.0.0 initial release
@@ -697,7 +698,7 @@ Define macros for abbreviations and other &quot;aliases&quot;, and then embed th
 !!!!!Code
 ***/
 //{{{
-version.extensions.AliasPlugin= {major: 1, minor: 1, revision: 1, date: new Date(2009,9,9)};
+version.extensions.AliasPlugin= {major: 1, minor: 2, revision: 0, date: new Date(2012,8,10)};
 config.macros.alias= { };
 config.macros.alias.handler = function(place,macroName,params,wikifier,paramString,tiddler) {
 	var alias=params.shift(); if (!alias) return; alias=alias.replace(/ /g,&quot;_&quot;); // don't allow spaces in alias
@@ -707,16 +708,18 @@ config.macros.alias.handler = function(place,macroName,params,wikifier,paramStri
 			function (place,macroName,params,wikifier,paramString,tiddler)
 				{ wikify(config.macros[macroName].text.format(params),place,null,tiddler); }
 	}
-	config.macros[alias].text = params[0]?params.join(' '):alias;	// set alias text
+	var t=(params[0]?params.join(' '):alias); // construct paramstring
+	t=t.replace(/\\n/g,'\n').replace(/\\t/g,'\t').replace(/\\([&lt;&gt;])/g,'$1'); // fixup escaped chars
+	config.macros[alias].text = t; // set alias text
 }
 //}}}</pre>
 </div>
-<div title="AliasPluginInfo" modifier="ELSDesignStudios" created="200509280700" modified="200909091131" tags="pluginInfo">
+<div title="AliasPluginInfo" modifier="EricShulman" created="200509280700" modified="201208102043" tags="pluginInfo" changecount="2">
 <pre>/***
 |Name|AliasPlugin|
 |Source|http://www.TiddlyTools.com/#AliasPlugin|
 |Documentation|http://www.TiddlyTools.com/#AliasPluginInfo|
-|Version|1.1.1|
+|Version|1.2.0|
 |Author|Eric Shulman|
 |License|http://www.TiddlyTools.com/#LegalStatements|
 |~CoreVersion|2.1|
@@ -733,7 +736,9 @@ Select a short keyword or other abbreviated term that is easily input with just 
 In order to ensure that your aliases are always defined and available for use, you should add your definitions to a tiddler that you are certain will be displayed when your TW is first loaded (e.g., [[MainMenu]]).  The {{{&lt;&lt;alias&gt;&gt;}}} macro itself won't actually produce any visible output, so it can be safely added to practically any tiddler without producing a change in that tiddler's appearance.
 
 To use the aliases you have defined, simply invoke them as you would any other TiddlyWiki macro, e.g.,
-{{{&lt;&lt;keyword&gt;&gt;}}}.  If you include parameters when you invoke the macro -- {{{&lt;&lt;keyword param param param...&gt;&gt;}}} -- they can be inserted direclty into the output by replacing corresponding substitution markers, indicated by using &quot;%0&quot; through &quot;%9&quot; in the &quot;text to display&quot; parameter used when the alias was defined.  For example, to define a quick alias for inserting a link to any given subject on www.wikipedia.com, you can write:
+{{{&lt;&lt;keyword&gt;&gt;}}}.  If you include parameters when you invoke the macro -- {{{&lt;&lt;keyword param param param...&gt;&gt;}}} -- they can be inserted direclty into the output by replacing corresponding substitution markers, indicated by using &quot;%0&quot; through &quot;%9&quot; in the &quot;text to display&quot; parameter used when the alias was defined.  You can also use standard &quot;backslash quoting&quot; (e.g, &quot;\n&quot; (newline), &quot;\t&quot; (tab), etc.) to insert special characters into the alias output.  Important note: ''//to embed another macro within an alias definition, you must &quot;quote&quot; the closing angle brackets by adding a backslash, like this:// {{{&gt;\&gt;}}}.''
+
+For example, to define a quick alias for inserting a link to any given subject on www.wikipedia.com, you can write:
 {{{
 &lt;&lt;alias wikipedia &quot;[[Wikipedia:%0|http://www.wikipedia.com/wiki/%0]]&quot;&gt;&gt;
 }}}
@@ -750,7 +755,7 @@ and is displayed this way:
 
 Another interesting example uses the substitution markers to automatically display a reference to a TiddlerSlice value:
 {{{
-&lt;&lt;alias describe {{&quot;|\&lt;\&lt;tiddler [[%0::Description]]\&gt;\&gt;|\n&quot;}}&gt;&gt;
+&lt;&lt;alias describe &quot;|&lt;&lt;tiddler [[%0::Description]]&gt;\&gt;|\n&quot;&gt;&gt;
 }}}
 which allows you to then write:
 {{{
@@ -761,10 +766,11 @@ which is processed as if you wrote:
 |&lt;&lt;tiddler [[AliasPlugin::Description]]&gt;&gt;|
 }}}
 and is displayed this way:
-&lt;&lt;alias describe {{&quot;|\&lt;\&lt;tiddler [[%0::Description]]\&gt;\&gt;|\n&quot;}}&gt;&gt;&lt;&lt;describe AliasPlugin&gt;&gt;
+&lt;&lt;alias describe &quot;|\t&lt;&lt;tiddler [[%0::Description]]&gt;\&gt;|\n&quot;&gt;&gt;&lt;&lt;describe AliasPlugin&gt;&gt;
 &lt;&lt;&lt;
 !!!!!Revisions
 &lt;&lt;&lt;
+2012.08.10 1.2.0 handle backslash quoting to allow direct use of macro calls in aliases
 2009.09.09 1.1.1 'tiddler' arg passed to wikify() so aliases containing macros render with correct context
 2008.03.11 [*.*.*] plugin size reduction - documentation moved to [[AliasPluginInfo]]
 2007.03.21 1.1.0 added support for parameter substitution into alias macros, using format() method and%0..%9 markers
@@ -2707,13 +2713,13 @@ Example
 	with:	{{'$1'!='$'+'1'?'$1':'crumbs'}}
 		{{'$2'!='$'+'2'?'$2':'tiddlers viewed during this session'}}&gt;&gt;</pre>
 </div>
-<div title="BreadcrumbsPlugin" modifier="ELSDesignStudios" created="200601291821" modified="201102162125" tags="NavigationPackage systemConfig" creator="ELSDesignStudios" changecount="8">
+<div title="BreadcrumbsPlugin" modifier="ELSDesignStudios" created="200601291821" modified="201206101819" tags="NavigationPackage systemConfig" creator="ELSDesignStudios" changecount="12">
 <pre>/***
 |Name|BreadcrumbsPlugin|
 |Author|Eric Shulman|
 |Source|http://www.TiddlyTools.com/#BreadcrumbsPlugin|
 |Documentation|http://www.TiddlyTools.com/#BreadcrumbsPluginInfo|
-|Version|2.1.4|
+|Version|2.1.5|
 |License|http://www.TiddlyTools.com/#LegalStatements|
 |~CoreVersion|2.1|
 |Type|plugin|
@@ -2738,39 +2744,38 @@ see [[BreadcrumbsPluginInfo]]
 &lt;&lt;&lt;
 !!!!!Revisions
 &lt;&lt;&lt;
-2011.02.16 2.1.4 in refresh(), use 'inline' instead of 'block' style (avoids unwanted linebreak).  In previousTiddler(), allow handling even if not in a tiddler so that back button can be placed in ~MainMenu or ~SidebarOptions.
+2012.06.10 2.1.5 refactored default options to eliminate global variable and use init() handling
 | Please see [[BreadcrumbsPluginInfo]] for previous revision details |
 2006.02.01 1.0.0 initial release
 &lt;&lt;&lt;
 !!!!!Code
 ***/
 //{{{
-version.extensions.BreadcrumbsPlugin= {major: 2, minor: 1, revision: 4, date: new Date(2011,2,16)};
-
-var defaults={
-	chkShowBreadcrumbs:		true,
-	chkReorderBreadcrumbs:		true,
-	chkCreateDefaultBreadcrumbs:	true,
-	chkShowStartupBreadcrumbs:	false,
-	chkBreadcrumbsReverse:		false,
-	chkBreadcrumbsLimit:		false,
-	txtBreadcrumbsLimit:		5,
-	chkBreadcrumbsLimitOpenTiddlers:false,
-	txtBreadcrumbsLimitOpenTiddlers:3,
-	chkBreadcrumbsHideHomeLink:	false,
-	chkBreadcrumbsSave:		false,
-	txtBreadcrumbsHomeSeparator:	' | ',
-	txtBreadcrumbsCrumbSeparator:	' &gt; '
-};
-for (var id in defaults) if (config.options[id]===undefined)
-	config.options[id]=defaults[id];
-
-config.macros.breadcrumbs =  {
+version.extensions.BreadcrumbsPlugin = { major: 2, minor: 1, revision: 5, date: new Date(2012,6,10) };
+config.macros.breadcrumbs = {
 	crumbs: [], // the list of current breadcrumbs
 	askMsg: &quot;Save current breadcrumbs before clearing?\n&quot;
 		+&quot;Press OK to save, or CANCEL to continue without saving.&quot;,
 	saveMsg: 'Enter the name of a tiddler in which to save the current breadcrumbs',
 	saveTitle: 'SavedBreadcrumbs',
+	options: {
+		chkShowBreadcrumbs:		true,
+		chkReorderBreadcrumbs:		true,
+		chkCreateDefaultBreadcrumbs:	true,
+		chkShowStartupBreadcrumbs:	false,
+		chkBreadcrumbsReverse:		false,
+		chkBreadcrumbsLimit:		false,
+		txtBreadcrumbsLimit:		5,
+		chkBreadcrumbsLimitOpenTiddlers:false,
+		txtBreadcrumbsLimitOpenTiddlers:5,
+		chkBreadcrumbsHideHomeLink:	false,
+		chkBreadcrumbsSave:		false,
+		txtBreadcrumbsHomeSeparator:	' | ',
+		txtBreadcrumbsCrumbSeparator:	' &gt; '
+	},
+	init: function() {
+		merge(config.options,this.options,true);
+	},
 	handler: function(place,macroName,params,wikifier,paramString,tiddler) {
 		var area=createTiddlyElement(place,&quot;span&quot;,null,&quot;breadCrumbs&quot;,null);
 		area.setAttribute(&quot;homeSep&quot;,params[0]||config.options.txtBreadcrumbsHomeSeparator);
@@ -2926,13 +2931,13 @@ TiddlyWiki.prototype.removeTiddler= function() {
 }
 //}}}</pre>
 </div>
-<div title="BreadcrumbsPluginInfo" modifier="ELSDesignStudios" created="200601291821" modified="201102162125" tags="pluginInfo" creator="ELSDesignStudios" changecount="3">
+<div title="BreadcrumbsPluginInfo" modifier="ELSDesignStudios" created="200601291821" modified="201206101818" tags="pluginInfo" creator="ELSDesignStudios" changecount="4">
 <pre>/***
 |Name|BreadcrumbsPluginInfo|
 |Author|Eric Shulman|
 |Source|http://www.TiddlyTools.com/#BreadcrumbsPlugin|
 |Documentation|http://www.TiddlyTools.com/#BreadcrumbsPluginInfo|
-|Version|2.1.4|
+|Version|2.1.5|
 |License|http://www.TiddlyTools.com/#LegalStatements|
 |~CoreVersion|2.1|
 |Type|documentation|
@@ -3035,6 +3040,7 @@ __''other settings:''__
 &lt;&lt;&lt;
 !!!!!Revisions
 &lt;&lt;&lt;
+2012.06.10 2.1.5 refactored default options to eliminate global variable and use init() handling
 2011.02.16 2.1.4 in refresh(), use 'inline' instead of 'block' style (avoids unwanted linebreak).  In previousTiddler(), allow handling even if not in a tiddler so that back button can be placed in ~MainMenu or ~SidebarOptions.
 2010.11.30 2.1.3 use story.getTiddler()
 2009.10.19 2.1.2 code reduction
@@ -17671,7 +17677,7 @@ Other streams from ~AmericaFree.TV include &quot;Classic Movies&quot; and &quot;
 <div title="MenuDefinitions" modifier="ELSDesignStudios" created="200708211603" modified="200708211620" tags="story">
 <pre>MainMenu SideBarOptions SideBarTabs StoryMenu SiteMenu SiteMenuGoto SiteMenuSearch SiteMenuFile SiteMenuEdit SiteMenuView SiteMenuOptions SiteMenuOptionsUpload SiteMenuExtras</pre>
 </div>
-<div title="MessageLogPlugin" modifier="ELSDesignStudios" created="200812231630" modified="201201300040" tags="systemConfig" changecount="8">
+<div title="MessageLogPlugin" modifier="ELSDesignStudios" created="200812231630" modified="201205212149" tags="systemConfig" changecount="20">
 <pre>/***
 |Name|MessageLogPlugin|
 |Source|http://www.TiddlyTools.com/#MessageLogPlugin|
@@ -17689,30 +17695,33 @@ This plugin automatically appends TiddlyWiki messages to a //shadow// tiddler, [
 &lt;&lt;&lt;
 !!!!!Configuration
 &lt;&lt;&lt;
-&lt;&lt;option chkMessageLog&gt;&gt; enable automatic logging of messages
-&lt;&lt;option chkMessageLogQuiet&gt;&gt; hide display of messages when logging is enabled
-Store messages in: {{editor{&lt;&lt;option txtMessageLogName&gt;&gt;}}}
-Date format (for log entries): {{editor{&lt;&lt;option txtMessageLogDateFormat&gt;&gt;}}}
+&lt;&lt;option chkMessageLog&gt;&gt; log messages to &lt;&lt;option txtMessageLogName&gt;&gt;
+&lt;&lt;option chkMessageLogFade&gt;&gt; fade message display after {{threechar{&lt;&lt;option txtMessageLogFade&gt;&gt;}}} seconds
+&lt;&lt;option chkMessageLogQuiet&gt;&gt; hide all messages (when logging is enabled)
+Date format (for log entries): &lt;&lt;option txtMessageLogDateFormat&gt;&gt;
 &lt;&lt;&lt;
 !!!!!Revisions
 &lt;&lt;&lt;
-2012.01.29 1.1.1 in displayMessage(), added noLog param (suppresses logging while still showing message)
+2012.05.22 1.2.0 added chkMessageLogFade/txtMessageLogFade for timed hiding of messages
+2012.01.29 1.1.1 in displayMessage(), added noLog param (bypass logging while still showing message)
 2012.01.22 1.1.0 added chkMessageLogQuiet option.  Misc code cleanup
 2008.12.24 1.0.2 hijack getMessageDiv() to add 'view log' command to message box
 2008.12.23 1.0.1 defined ResetMessageLogCommand section and embedded command in default shadow message log.  Also, prevent refresh of log display if tiddler is currently being edited.
 2008.12.23 1.0.0 initial release
 &lt;&lt;&lt;
 !!!!!MessageLogControls
-&lt;&lt;option chkMessageLog&gt;&gt; enable logging | &lt;&lt;option chkMessageLogQuiet&gt;&gt; hide message display (while logging) | &lt;html&gt;&lt;a href='javascript:;' title='clear stored message log' onclick='var log=config.options.txtMessageLogName; if (!confirm(this.title+&quot;?&quot;)) return false; config.shadowTiddlers[log]=&quot;\&lt;\&lt;tiddler [[MessageLogPlugin##MessageLogControls]]\&gt;\&gt;\n&quot;; store.removeTiddler(log); story.refreshTiddler(log,null,true);'&gt;clear message log&lt;/a&gt;&lt;/html&gt;
+&lt;&lt;option chkMessageLog&gt;&gt; enable logging | &lt;&lt;option chkMessageLogFade&gt;&gt; fade message display after {{threechar{&lt;&lt;option txtMessageLogFade&gt;&gt;}}} seconds | &lt;&lt;option chkMessageLogQuiet&gt;&gt; hide all messages while logging | &lt;html&gt;&lt;a href='javascript:;' title='clear stored message log' onclick='var log=config.options.txtMessageLogName; if (!confirm(this.title+&quot;?&quot;)) return false; config.shadowTiddlers[log]=&quot;\&lt;\&lt;tiddler [[MessageLogPlugin##MessageLogControls]]\&gt;\&gt;\n&quot;; store.removeTiddler(log); story.refreshTiddler(log,null,true);'&gt;clear message log&lt;/a&gt;&lt;/html&gt;
 !!!!!Code
 ***/
 //{{{
-version.extensions.MessageLogPlugin= {major: 1, minor: 1, revision: 1, date: new Date(2012,1,29)};
+version.extensions.MessageLogPlugin= {major: 1, minor: 2, revision: 0, date: new Date(2012,5,22)};
 
 // SETTINGS
 var defaults={
 	chkMessageLog:		true,
 	chkMessageLogQuiet:	false,
+	chkMessageLogFade:	false,
+	txtMessageLogFade:	'3',
 	txtMessageLogName:	'MessageLog',
 	txtMessageLogDateFormat:'YYYY.0MM.0DD 0hh:0mm:0ss'
 }; for (var opt in defaults) config.options[opt]=defaults[opt];
@@ -17724,20 +17733,23 @@ config.shadowTiddlers[config.options.txtMessageLogName]=
 if (window.displayMessage_MessageLogHijack===undefined) { // only once
 	window.displayMessage_MessageLogHijack=window.displayMessage;
 	window.displayMessage=function(text,linkText,noLog) {
+		var co=config.options; // abbrev
 		this.displayMessage_MessageLogHijack.apply(this,arguments);
-		if (noLog || !config.options.chkMessageLog) return;
-		var log=config.options.txtMessageLogName;
+		if (noLog || !co.chkMessageLog) return;
+		var log=co.txtMessageLogName;
 		var fmt='&gt;%0 '+(linkText?'[[%1|%2]]':'%1');
-		var now=new Date().formatString(config.options.txtMessageLogDateFormat);
+		var now=new Date().formatString(co.txtMessageLogDateFormat);
 		var cmd='&lt;&lt;tiddler [[MessageLogPlugin##MessageLogControls]]&gt;&gt;\n';
 		var out=store.getTiddlerText(log,cmd)+fmt.format([now,text,linkText])+'\n';
 		config.shadowTiddlers[log]=out; // update shadow log
 		var tid=store.getTiddler(log); if (tid) { // update real tiddler log, if present
-			var who=config.options.chkForceMinorUpdate?tid.modifier:config.options.txtUserName;
-			var when=config.options.chkForceMinorUpdate?tid.modified:new Date();
+			var who=co.chkForceMinorUpdate?tid.modifier:co.txtUserName;
+			var when=co.chkForceMinorUpdate?tid.modified:new Date();
 			store.saveTiddler(log,log,out,who,when,tid.tags,tid.fields);
 		}
 		if (!story.isDirty(log)) story.refreshTiddler(log,null,true); // only if log is not being edited
+		if (co.chkMessageLogFade &amp;&amp; co.txtMessageLogFade&gt;0)
+			setTimeout(&quot;jQuery('#messageArea').fadeOut('slow',clearMessage)&quot;,co.txtMessageLogFade*1000); 
 	}
 }
 
@@ -24876,11 +24888,11 @@ config.macros.player.html.flash='\
 	&lt;/object&gt;';
 //}}}</pre>
 </div>
-<div title="PopupPreviewPlugin" modifier="ELSDesignStudios" created="200711101821" modified="201109221812" tags="systemConfig" creator="ELSDesignStudios">
+<div title="PopupPreviewPlugin" modifier="ELSDesignStudios" created="200711101821" modified="201205222223" tags="systemConfig" creator="ELSDesignStudios" changecount="10">
 <pre>/***
 |Name|PopupPreviewPlugin|
 |Source|http://www.TiddlyTools.com/#PopupPreviewPlugin|
-|Version|1.1.1|
+|Version|1.2.0|
 |Author|Eric Shulman|
 |License|http://www.TiddlyTools.com/#LegalStatements|
 |~CoreVersion|2.1|
@@ -24890,7 +24902,7 @@ config.macros.player.html.flash='\
 This plugin adds a custom 'shift-click' or mouseover handler to all tiddler links (or images with tiddler links) to display a popup with a fully-formatted preview of the linked tiddler's content.
 !!!!!Usage
 &lt;&lt;&lt;
-When you click the mouse on a preview-enhanced tiddler link while holding the SHIFT key, a popup will be displayed, containing the fully-formatted content of the linked tiddler, in a restricted size, scrolling area.  Note that, while you can //scroll// this preview display to //view// its contents, clicking anywhere (even within the preview popup) will automatically dismiss the popup display, making interaction with the preview content impossible.  To actually interact with the content of a tiddler, you should open it in the normal fashion (i.e, by clicking the tiddler link //without// holding the SHIFT key).
+SHIFT-click to display a popup containing the fully-formatted content of the linked tiddler, in a fixed size, scrolling area.  Click anywhere to dismiss the popup.  Clicking on the link will open the tiddler in the normal manner.  If the linked tiddler contains a section named &quot;preview&quot;, the popup displays that section content rather than the entire tiddler.  You can hide the &quot;preview&quot; section by enclosing it within comment markers ({{{/%...%/}}}) or a CSS wrapper ({{{@@display:none;...@@}}} or &lt;html&gt;&lt;nowiki&gt;&lt;code&gt;{{hidden{...}}}&lt;/code&gt;&lt;/html&gt;) so that you can display alternative &quot;summary&quot; content in the popup preview while still showing the entire content when viewing the tiddler directly.
 &lt;&lt;&lt;
 !!!!!Configuration
 &lt;&lt;&lt;
@@ -24901,24 +24913,33 @@ When you click the mouse on a preview-enhanced tiddler link while holding the SH
 width of popup: &lt;&lt;option txtPopupPreviewWidth&gt;&gt; height of popup: &lt;&lt;option txtPopupPreviewHeight&gt;&gt;
 //(width and height may be specified using any valid CSS units, e.g., &quot;px&quot;, &quot;em&quot;, &quot;in&quot;, &quot;cm&quot;, &quot;%&quot;)//
 {{{usage: &lt;&lt;option txtPopupPreviewWidth&gt;&gt; &lt;&lt;option txtPopupPreviewHeight&gt;&gt;}}}
+preview section name: &lt;&lt;option txtPopupPreviewSection&gt;&gt;
+{{{usage: &lt;&lt;option txtPopupPreviewSection&gt;&gt;}}}
+&lt;&lt;&lt;
+!!!!!Preview
+&lt;&lt;&lt;
+The contents of this section are displayed when SHIFT-clicking on a link to [[PopupPreviewPlugin]].  This section can be hidden using comment markers or a CSS wrapper so that alternative, &quot;summary&quot; content can be displayed in the popup.
 &lt;&lt;&lt;
 !!!!!Revisions
 &lt;&lt;&lt;
-2011.09.22 [1.1.1] fixed default setting for chkPopupPreviewMouseover
-2009.09.22 [1.1.0] added chkPopupPreviewMouseover option
-2007.11.19 [1.0.0] fixed handling for imageLinks ('tiddlylink' attrib is on the *parentNode* of target image element)
-2007.11.10 [0.5.0] alpha development - use with care
+2012.05.23 1.2.0 added chkPopupPreviewSection (for showing summary content in popup)
+2011.09.22 1.1.1 fixed default setting for chkPopupPreviewMouseover
+2009.09.22 1.1.0 added chkPopupPreviewMouseover option
+2007.11.19 1.0.0 fixed handling for imageLinks ('tiddlylink' attrib is on the *parentNode* of target image element)
+2007.11.10 0.5.0 alpha development - use with care
 &lt;&lt;&lt;
 !!!!!Code
 ***/
 //{{{
-version.extensions.PopupPreviewPlugin= {major: 1, minor: 1, revision: 1, date: new Date(2011,9,22)};
+version.extensions.PopupPreviewPlugin= {major: 1, minor: 2, revision: 0, date: new Date(2012,5,23)};
 
 var co=config.options; // abbrev
 if (co.chkPopupPreviews===undefined) co.chkPopupPreviews=true;
 if (co.txtPopupPreviewWidth==undefined) co.txtPopupPreviewWidth=&quot;50%&quot;;
 if (co.txtPopupPreviewHeight==undefined) co.txtPopupPreviewHeight=&quot;10em&quot;;
 if (co.chkPopupPreviewMouseover===undefined) co.chkPopupPreviewMouseover=false;
+if (co.txtPopupPreviewSection===undefined) co.txtPopupPreviewSection=&quot;Preview&quot;;
+
 
 if (window.popupPreview_createTiddlyLink===undefined) { // only once
 window.popupPreview_createTiddlyLink=window.createTiddlyLink;
@@ -24935,7 +24956,7 @@ window.createTiddlyLink=function()
 		else { // show tiddler preview if enabled and SHIFT is pressed
 			var tid=theTarget.getAttribute(&quot;tiddlylink&quot;);
 			if (!tid) tid=theTarget.parentNode.getAttribute(&quot;tiddlylink&quot;); // for &quot;imageLink&quot;
-			var text=store.getTiddlerText(tid);
+			var text=store.getTiddlerText(tid+&quot;##&quot;+co.txtPopupPreviewSection,store.getTiddlerText(tid));
 			if (text &amp;&amp; text.length) {
 				var popup = Popup.create(this,null,&quot;sticky popup&quot;);
 				popup.style.width=co.txtPopupPreviewWidth;
@@ -30954,7 +30975,7 @@ Try it:
 
 %/&lt;&lt;tiddler {{var src='SetTiddlerHeight'; src+(tiddler&amp;&amp;tiddler.title==src?'##info':'##show');}}&gt;&gt;</pre>
 </div>
-<div title="SetUserNamePlugin" modifier="ELSDesignStudios" created="200612011920" modified="200612011936" tags="systemConfig TidIDEPackage">
+<div title="SetUserNamePlugin" modifier="ELSDesignStudios" created="200612011920" modified="201207120712" tags="systemConfig TidIDEPackage" changecount="4">
 <pre>/***
 |Name|SetUserNamePlugin|
 |Source|http://www.TiddlyTools.com/#SetUserNamePlugin|
@@ -30967,24 +30988,26 @@ Try it:
 !!!!!Usage
 &lt;&lt;&lt;
 {{{
+&lt;&lt;setUserName&gt;&gt;
 &lt;&lt;setUserName force&gt;&gt;
 }}}
-This macro prompts for a new username if the default username (&quot;YourName&quot;) is currently set.  Use optional 'force' keyword to trigger a prompt even if username has already been set.
+If the default username (&quot;YourName&quot;) is currently set, the macro automatically prompts for a new username. The optional 'force' keyword triggers a prompt even if a non-default username has already been set.  When the plugin is installed, the default (shadow) EditTemplate definition is updated to invoke the macro (using 
+template syntax: {{{&lt;span macro='setUserName'&gt;&lt;/span&gt;}}}).  As a result, whenever a user attempts to edit/create a tiddler AND have not yet entered a username, they will be automatically prompted to enter a new username.  If you are using a customized EditTemplate, you will need to edit it yourself to add the above syntax.
 
-If you are using the default (shadow) EditTemplate definition, it will be updated to invoke this macro, via the following template syntax:
 {{{
-&lt;span macro='setUserName'&gt;&lt;/span&gt;
+&lt;&lt;showUserName&gt;&gt;
 }}}
-so that whenever a user attempts to edit/create a tiddler AND have not yet entered a username, they will be automatically prompted to enter a new username.  If you are using a customized EditTemplate, you will need to edit it yourself to add the above.
+Displays the current username.  Clicking the name prompts for a new username.  Note: for backward-compatibility, the plugin also creates a shadow tiddler named [[ShowUserName]] so you can invoke the macro by using: {{{&lt;&lt;tiddler ShowUserName&gt;&gt;}}}
 &lt;&lt;&lt;
 !!!!!Revisions
 &lt;&lt;&lt;
-2006.12.01 [1.0.0] initial release - converted from SetUserName inline script
+2012.07.11 1.1.0 added ShowUserName macro and shadow (replaces ShowUserName transclusion)
+2006.12.01 1.0.0 initial release - converted from SetUserName inline script
 &lt;&lt;&lt;
 !!!!!Code
 ***/
 //{{{
-version.extensions.SetUserNamePlugin= {major: 1, minor: 0, revision: 0, date: new Date(2006,12,1)};
+version.extensions.SetUserNamePlugin= {major: 1, minor: 1, revision: 0, date: new Date(2012,7,11)};
 
 config.macros.setUserName = {
 	msg: &quot;Please set your username&quot;,
@@ -31000,6 +31023,21 @@ config.macros.setUserName = {
 		config.macros.option.propagateOption(opt,&quot;value&quot;,config.options[opt],&quot;input&quot;);
 	}
 }
+
+config.macros.showUserName = {
+	msg: &quot;click to set your username&quot;,
+	handler: function(place,macroName,params) {
+		createTiddlyButton(place,config.options.txtUserName,this.msg,this.action);
+	},
+	action: function(ev) {
+		var place=resolveTarget(ev);
+		config.macros.setUserName.handler(resolveTarget(ev),&quot;showUserName&quot;,['force']);
+		place.innerHTML=config.options.txtUserName;
+		return false;
+	}
+}
+
+config.shadowTiddlers.ShowUserName=&quot;&lt;&lt;showUserName&gt;&gt;&quot;;
 
 // add trigger to default shadow EditTemplate (custom templates: add this by hand)
 config.shadowTiddlers.EditTemplate+=&quot;&lt;span macro='setUserName'&gt;&lt;/span&gt;&quot;;
@@ -32004,31 +32042,6 @@ $1
 		largetid.title, largetid.text.length]);
 	out;
 }}&gt;&gt;</pre>
-</div>
-<div title="ShowUserName" modifier="ELSDesignStudios" created="200609061757" modified="200909102211">
-<pre>/%
-|Name|ShowUserName|
-|Source|http://www.TiddlyTools.com/#ShowUserName|
-|Version|1.0.0|
-|Author|Eric Shulman|
-|License|http://www.TiddlyTools.com/#LegalStatements|
-|~CoreVersion|2.1|
-|Type|transclusion|
-|Description|Displays current username, click for prompt box to change name|
-
-Usage: &lt;&lt;tiddler ShowUserName&gt;&gt;
-
-!html
-&lt;html&gt;&lt;nowiki&gt;&lt;a href='javascript:;' title='click to change your username' onclick=&quot;
-	var opt='txtUserName';
-	var who=prompt('Please set your username',config.options[opt]);
-	if (!who||!who.trim().length) return false;
-	this.innerHTML=who;
-	config.macros.option.propagateOption(opt,'value',config.options[opt],'input');
-	return false;
-&quot;&gt;$1&lt;/a&gt;&lt;/html&gt;
-!end
-%/&lt;&lt;tiddler ShowUserName##html with: {{config.options.txtUserName}}&gt;&gt;</pre>
 </div>
 <div title="SideBarOptions" modifier="ELSDesignStudios" created="200607140754" modified="200808202228" tags="CoreTiddlers">
 <pre>+++(goto)*[goto]...{{borderleft{
@@ -43723,11 +43736,11 @@ $1
 |''Author:''|PascalCollin|
 %/</pre>
 </div>
-<div title="Welcome" modifier="ELSDesignStudios" created="200603120251" modified="200910131459" tags="TiddlyTools" changecount="3">
+<div title="Welcome" modifier="ELSDesignStudios" created="200603120251" modified="201207120713" tags="TiddlyTools" changecount="4">
 <pre>&lt;&lt;tiddler HideTiddlerBackground&gt;&gt;&lt;&lt;tiddler HideTiddlerTags&gt;&gt;/%
 %/&lt;&lt;tiddler ReplaceDoubleClick with: ctrl doubleclick&gt;&gt;/%
 %/&lt;&lt;tiddler HideTiddlerSubtitle&gt;&gt;&lt;&lt;tiddler ReplaceTiddlerTitle with:
-	&quot;{{nowrap{//\&lt;\&lt;QOTD Greetings noclick\&gt;\&gt;, \&lt;\&lt;tiddler ShowUserName\&gt;\&gt;//}\}\}&quot;&gt;&gt;/%
+	&quot;{{nowrap{//\&lt;\&lt;QOTD Greetings noclick\&gt;\&gt;, \&lt;\&lt;showUserName\&gt;\&gt;//}\}\}&quot;&gt;&gt;/%
 %/&lt;html&gt;&lt;hr&gt;&lt;/html&gt;/%
 %/{{span{{{floatleft small{@@position:relative;+++^18em^[clock]...
 	&lt;&lt;moveablePanel nofold&gt;&gt;Clock
